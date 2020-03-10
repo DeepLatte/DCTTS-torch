@@ -229,8 +229,8 @@ def saveModel10k(globalStep, graph, optimizer, loss, networkPath, lossList):
 # normalization
 
 if __name__ == "__main__":
-    trNet = 0
-    # trNet = int(sys.argv[1])
+    # trNet = 0
+    trNet = int(sys.argv[1])
     try:
         retrain = int(sys.argv[3])
     except:
