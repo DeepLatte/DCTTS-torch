@@ -93,8 +93,8 @@ if __name__ == "__main__":
     # input text sqeuence from user or use sample sequence.
     # text processing
 
-    # modelNumb = int(sys.argv[1])
-    modelNumb = 5
+    modelNumb = int(sys.argv[1])
+
     trNet = 'SSRN'
 
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
