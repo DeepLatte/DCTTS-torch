@@ -1,6 +1,6 @@
 # DCTTS_TORCH
 
-Implement DCTTS, the speech synthesis model based on convolutional neural network. This model yet supports only English.
+Implement DCTTS based on pytorch, the speech synthesis model based on convolutional neural network. This model yet supports only English.
 You would find original paper at : [Efficiently Trainable Text-to-Speech System Based on Deep Convolutional Networks with Guided Attention.](https://arxiv.org/abs/1710.08969)
 
 ### Datasets
@@ -21,9 +21,9 @@ English - [The LJ Speech Dataset](https://keithito.com/LJ-Speech-Dataset/)
 2. **Preprocess**
 - run `load_audio.py`
 3. **Train Model(Text2Mel or SSRN)**
-*1st Args* : Model you want to train. "0 for Text2Mel, 1 for SSRN"
-*2nd Args* : Put integer number `n` then it will check the folder named `Model_n` is existed or not. The folder will created if the folder is absent. 
-*3rd Args* : (Optional, Default=0) `1` for training with pre-trained model.
+- 1st Args* : Model you want to train. "0 for Text2Mel, 1 for SSRN".
+- 2nd Args* : Put integer number `n` then it will check the folder named `Model_n` is existed or not. The folder will created if the folder is absent.
+- 3rd Args* : (Optional, Default=0) `1` for training with pre-trained model.
 - Train Text2Mel
    `$ python train.py 0 0`
 - Train SSRN
