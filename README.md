@@ -12,6 +12,7 @@ English - [The LJ Speech Dataset](https://keithito.com/LJ-Speech-Dataset/)
 - PyTorch
 - librosa
 - tqdm
+- TensorboardX
 
 ### How to use
 
