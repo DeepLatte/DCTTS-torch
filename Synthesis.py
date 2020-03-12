@@ -9,7 +9,7 @@ from scipy.io.wavfile import write
 
 from load_audio import textProcess, load_vocab
 from data import speechDataset, collate_fn, att2img, plotAtt, plotMel
-import networks_v1 as network
+import networks_v1 as networks
 import vocoder
 
 
