@@ -234,7 +234,7 @@ class SSRN(nn.Module):
                 if param.dr > 0:
                     self.seq.append(nn.Dropout(param.dr))
 
-        self.seq.aeppnd(module.Cv(inChannel = c,
+        self.seq.append(module.Cv(inChannel = c,
                                   outChannel = 2 * c,
                                   kernelSize = 1,
                                   padding = "SAME",
@@ -252,7 +252,7 @@ class SSRN(nn.Module):
             if param.dr > 0:
                 self.seq.append(nn.Dropout(param.dr))
 
-        self.seq.aeppnd(module.Cv(inChannel = 2 * c,
+        self.seq.append(module.Cv(inChannel = 2 * c,
                                   outChannel = upsamfbinSize,
                                   kernelSize = 1,
                                   padding = "SAME",
