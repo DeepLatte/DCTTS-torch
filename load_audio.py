@@ -49,10 +49,10 @@ def audio_load(audPathList, txtlenList):
 
         # T -> T/r, Reduction
         mel = mel[::param.r, :]
-        gMat = guideAttentionNT(0.2, txtlenList[idx], len(mel))
+        # gMat = guideAttentionNT(0.2, txtlenList[idx], len(mel))
         np.save(os.path.join(param.filePath, "mel_dir", "mel_{}.npy".format(idx)), mel)
         np.save(os.path.join(param.filePath, "mag_dir", "mag_{}.npy".format(idx)), mag)
-        np.save(os.path.join(param.filePath, "gMat_dir", "gMat_{}.npy".format(idx)), gMat)
+        # np.save(os.path.join(param.filePath, "gMat_dir", "gMat_{}.npy".format(idx)), gMat)
 
 
 def load_spectrogram(audioDir):

@@ -7,7 +7,7 @@ import torch.optim.lr_scheduler as lr_scheduler
 from torch.utils.data import DataLoader
 from tensorboardX import SummaryWriter
 
-import networks_v1 as networks
+import networks_v2 as networks
 import sys
 import module
 import gAtt
