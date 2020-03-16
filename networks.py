@@ -374,7 +374,7 @@ class AttentionNet(nn.Module):
         Q : Queries (B, d, T/r)
     return:
         R_ : R' (B, 2*d, T/r)
-        A : Attention matrix (N, T/r)
+        A : Attention matrix (B, N, T/r)
     '''
     def __init__(self):
         super(AttentionNet, self).__init__()

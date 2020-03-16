@@ -25,7 +25,7 @@ class graph(nn.Module):
 
 def dirLoad(modelNumb):
     modelPath = os.path.abspath('./model_{}'.format(modelNumb))
-    logt2m = list(np.genfromtxt(os.path.join(modelPath, 't2m', 'log10k.csv'), delimiter=','))
+    logt2m = list(np.genfromtxt(os.path.join(modelPath, 't2m', 'log.csv'), delimiter=','))
     globalStep = int(logt2m[-1][0])
     t2mPATH = os.path.join(modelPath, 't2m', 'best_{}'.format(globalStep), 'bestModel_{}.pth'.format(globalStep))
     
@@ -33,7 +33,7 @@ def dirLoad(modelNumb):
     globalStep = int(logSSRN[0][0])
     ssrnPATH = os.path.join(modelPath, 'SSRN', 'best_{}'.format(globalStep), 'bestModel_{}.pth'.format(globalStep))
 
-    testPATH = os.path.abspath(os.path.join(modelPath, 'synthesize2'))
+    testPATH = os.path.abspath(os.path.join(modelPath, 'synthesize'))
     wavPATH = os.path.abspath(os.path.join(testPATH, 'wav'))    
     imgPATH = os.path.abspath(os.path.join(testPATH, 'img'))
     if not os.path.exists(testPATH):
@@ -68,7 +68,6 @@ def Synthesize(testLoader, idx2char, DEVICE, t2mPATH, ssrnPATH, wavPATH, imgPATH
             batchTxt = batchTxt.to(DEVICE)
             # batchMel = batchMel.to(DEVICE)
             predMel = torch.zeros(param.B,  param.max_T, param.n_mels).to(DEVICE) # (B, T/r, n_mels)
-
             # At every time step, predict mel spectrogram
             for t in range(param.max_T-1):
                 genMel, A, _  = t2m(batchTxt, predMel) #genMel : (B, n_mels, T/r)
@@ -93,8 +92,8 @@ if __name__ == "__main__":
     # input text sqeuence from user or use sample sequence.
     # text processing
 
-    modelNumb = int(sys.argv[1])
-
+    # modelNumb = int(sys.argv[1])
+    modelNumb = 1
     trNet = 'SSRN'
 
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"

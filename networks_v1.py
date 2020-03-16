@@ -15,7 +15,7 @@ class TextEnc(nn.Module):
     def __init__(self, vocabSize, embSize, dSize):
         super(TextEnc, self).__init__()
 
-        self.EmbLayer = module.Embed(vocabSize, embSize)
+        self.EmbLayer = module.Embed(vocabSize, embSize) # (1 , T) -> (V, T), (e, V) * (V, T) -> (e, T)
         self.seq = nn.ModuleList()
         self.Conv1st = module.Cv(inChannel = embSize,
                                  outChannel = dSize * 2,
@@ -24,8 +24,8 @@ class TextEnc(nn.Module):
                                  dilation = 1,
                                  activationF = "ReLU")
         self.seq.append(self.Conv1st)
-        if param.dr > 0:
-            self.seq.append(nn.Dropout(param.dr))
+        self.seq.append(nn.Dropout(param.dr))
+        
         self.Conv2nd = module.Cv(inChannel = dSize * 2,
                                  outChannel = dSize * 2,
                                  kernelSize = 1,
@@ -33,8 +33,7 @@ class TextEnc(nn.Module):
                                  dilation = 1,
                                  activationF = None)
         self.seq.append(self.Conv2nd)
-        if param.dr > 0:
-            self.seq.append(nn.Dropout(param.dr))
+        self.seq.append(nn.Dropout(param.dr))
         
         # HcTwice
         for _ in range(2):
@@ -44,8 +43,8 @@ class TextEnc(nn.Module):
                                         kernelSize = 3,
                                         padding = "SAME",
                                         dilation = 3 ** d))
-                if param.dr > 0:
-                    self.seq.append(nn.Dropout(param.dr))
+                
+                self.seq.append(nn.Dropout(param.dr))
 
         for _ in range(2):
             self.seq.append(module.Hc(inChannel = dSize*2,
@@ -53,8 +52,8 @@ class TextEnc(nn.Module):
                                       kernelSize = 3,
                                       padding = "SAME",
                                       dilation = 1))
-            if param.dr > 0:
-                self.seq.append(nn.Dropout(param.dr))
+            
+            self.seq.append(nn.Dropout(param.dr))
         
         for _ in range(2):
             self.seq.append(module.Hc(inChannel = dSize*2,
@@ -62,8 +61,8 @@ class TextEnc(nn.Module):
                                       kernelSize = 1,
                                       padding = "SAME",
                                       dilation = 1))
-            if param.dr > 0:
-                self.seq.append(nn.Dropout(param.dr))
+            
+            self.seq.append(nn.Dropout(param.dr))
 
     def forward(self, input):
         x = self.EmbLayer(input)
@@ -86,8 +85,8 @@ class AudioEnc(nn.Module):
                                  dilation = 1,
                                  activationF = "ReLU")
         self.seq.append(self.Conv1st)
-        if param.dr > 0:
-            self.seq.append(nn.Dropout(param.dr))
+        
+        self.seq.append(nn.Dropout(param.dr))
 
         self.Conv2nd = module.Cv(inChannel = dSize,
                                  outChannel = dSize,
@@ -96,8 +95,8 @@ class AudioEnc(nn.Module):
                                  dilation = 1,
                                  activationF = "ReLU")
         self.seq.append(self.Conv2nd)
-        if param.dr > 0:
-            self.seq.append(nn.Dropout(param.dr))
+        
+        self.seq.append(nn.Dropout(param.dr))
 
         self.Conv3rd = module.Cv(inChannel = dSize,
                                  outChannel = dSize,
@@ -106,8 +105,8 @@ class AudioEnc(nn.Module):
                                  dilation = 1,
                                  activationF = None)
         self.seq.append(self.Conv3rd)
-        if param.dr > 0:
-            self.seq.append(nn.Dropout(param.dr))
+        
+        self.seq.append(nn.Dropout(param.dr))
         
         for _ in range(2):
             for d in range(4):
@@ -116,8 +115,8 @@ class AudioEnc(nn.Module):
                                           kernelSize = 3,
                                           padding = "causal",
                                           dilation = 3 ** d))
-                if param.dr > 0:
-                    self.seq.append(nn.Dropout(param.dr))
+                
+                self.seq.append(nn.Dropout(param.dr))
 
         for _ in range(2):
             self.seq.append(module.Hc(inChannel = dSize,
@@ -145,8 +144,8 @@ class AudioDec(nn.Module):
                                  dilation = 1,
                                  activationF = None)
         self.seq.append(self.Conv1st)
-        if param.dr > 0:
-            self.seq.append(nn.Dropout(param.dr))
+        
+        self.seq.append(nn.Dropout(param.dr))
 
         for d in range(4):
             self.seq.append(module.Hc(inChannel = dSize,
@@ -154,8 +153,8 @@ class AudioDec(nn.Module):
                                     kernelSize = 3,
                                     padding = "causal",
                                     dilation = 3 ** d))
-            if param.dr > 0:
-                self.seq.append(nn.Dropout(param.dr))
+            
+            self.seq.append(nn.Dropout(param.dr))
 
         for _ in range(2):
             self.seq.append(module.Hc(inChannel = dSize,
@@ -163,8 +162,8 @@ class AudioDec(nn.Module):
                                       kernelSize = 3,
                                       padding = "causal",
                                       dilation = 1))
-            if param.dr > 0:
-                self.seq.append(nn.Dropout(param.dr))
+            
+            self.seq.append(nn.Dropout(param.dr))
 
         for _ in range(3):
             self.seq.append(module.Cv(inChannel = dSize,
@@ -173,8 +172,8 @@ class AudioDec(nn.Module):
                                       padding = "causal",
                                       dilation = 1,
                                       activationF = "ReLU"))
-            if param.dr > 0:
-                self.seq.append(nn.Dropout(param.dr))
+            
+            self.seq.append(nn.Dropout(param.dr))
 
         self.ConvLast = module.Cv(inChannel = dSize,
                                   outChannel = fbinSize,
@@ -203,8 +202,8 @@ class SSRN(nn.Module):
                                   dilation = 1,
                                   activationF = None)
         self.seq.append(self.Conv1st)
-        if param.dr > 0:
-            self.seq.append(nn.Dropout(param.dr))
+        
+        self.seq.append(nn.Dropout(param.dr))
         
         for d in range(2):
             self.seq.append(module.Hc(inChannel = c,
@@ -212,8 +211,8 @@ class SSRN(nn.Module):
                                       kernelSize = 3,
                                       padding = "SAME",
                                       dilation = 3 ** d))
-            if param.dr > 0:
-                self.seq.append(nn.Dropout(param.dr))
+            
+            self.seq.append(nn.Dropout(param.dr))
 
         for _ in range(2):
             self.seq.append(module.Dc(inChannel = c,
@@ -222,8 +221,8 @@ class SSRN(nn.Module):
                                       padding = "SAME",
                                       dilation = 1,
                                       activationF = None))
-            if param.dr > 0:
-                self.seq.append(nn.Dropout(param.dr))
+            
+            self.seq.append(nn.Dropout(param.dr))
             
             for _ in range(2):
                 self.seq.append(module.Hc(inChannel = c,
@@ -231,8 +230,8 @@ class SSRN(nn.Module):
                                           kernelSize = 3,
                                           padding = "SAME",
                                           dilation = 1))
-                if param.dr > 0:
-                    self.seq.append(nn.Dropout(param.dr))
+                
+                self.seq.append(nn.Dropout(param.dr))
 
         self.seq.append(module.Cv(inChannel = c,
                                   outChannel = 2 * c,
@@ -240,8 +239,8 @@ class SSRN(nn.Module):
                                   padding = "SAME",
                                   dilation = 1,
                                   activationF = None))
-        if param.dr > 0:
-            self.seq.append(nn.Dropout(param.dr))
+        
+        self.seq.append(nn.Dropout(param.dr))
         
         for _ in range(2):
             self.seq.append(module.Hc(inChannel = 2*c,
@@ -249,8 +248,8 @@ class SSRN(nn.Module):
                                       kernelSize = 3,
                                       padding = "SAME",
                                       dilation = 1))
-            if param.dr > 0:
-                self.seq.append(nn.Dropout(param.dr))
+            
+            self.seq.append(nn.Dropout(param.dr))
 
         self.seq.append(module.Cv(inChannel = 2 * c,
                                   outChannel = upsamfbinSize,
@@ -258,8 +257,7 @@ class SSRN(nn.Module):
                                   padding = "SAME",
                                   dilation = 1,
                                   activationF = None))
-        if param.dr > 0:
-            self.seq.append(nn.Dropout(param.dr))
+        self.seq.append(nn.Dropout(param.dr))
 
         for _ in range(2):
             self.seq.append(module.Cv(inChannel = upsamfbinSize,
@@ -268,8 +266,8 @@ class SSRN(nn.Module):
                                       padding = "SAME",
                                       dilation = 1,
                                       activationF = "ReLU"))
-            if param.dr > 0:
-                self.seq.append(nn.Dropout(param.dr))
+            
+            self.seq.append(nn.Dropout(param.dr))
 
         self.ConvLast = module.Cv(inChannel = upsamfbinSize,
                                 outChannel = upsamfbinSize,

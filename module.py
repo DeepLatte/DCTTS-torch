@@ -30,7 +30,7 @@ class Embed(nn.Module):
 
 class Cv(nn.Module):
     def __init__(self, inChannel, outChannel, kernelSize,
-                padding, dilation, activationF = None):
+                padding, dilation, activationF = None, weightNorm = False):
         #nn.conv1d(in_channels, out_channels, kernel size, stride, padding,
         #          dilation, ...)
         #
@@ -40,12 +40,15 @@ class Cv(nn.Module):
                   "none" : 0}
         self.pad = padding.lower()
         self.padValue = padDic[self.pad]
-        self.convOne = norm(nn.Conv1d(in_channels=inChannel, 
+        self.convOne = nn.Conv1d(in_channels=inChannel, 
                                  out_channels=outChannel, 
                                  kernel_size=kernelSize,
                                  stride=1,
                                  padding=self.padValue,
-                                 dilation=dilation))
+                                 dilation=dilation)
+        if weightNorm:
+            self.convOne = norm(self.convOne)
+
         self.activationF = activationF
 
 
@@ -73,19 +76,21 @@ class Dc(nn.Module):
     Lout = (Lin - 1)*stride - 2*padding + dilation*(kernel_size-1) + output_padding*1
     '''
     def __init__(self, inChannel, outChannel, kernelSize,
-                padding, dilation, activationF = None):
+                padding, dilation, activationF = None, weightNorm = False):
         super(Dc, self).__init__()
         padDic = {"same" : dilation*(kernelSize-1)//2,
                   "causal" : dilation*(kernelSize-1),
                   "none" : 0}
         self.pad = padding.lower()
         self.padValue = padDic[self.pad]
-        self.transposedCv = norm(nn.ConvTranspose1d(in_channels=inChannel,
+        self.transposedCv = nn.ConvTranspose1d(in_channels=inChannel,
                                                out_channels=outChannel,
                                                kernel_size=kernelSize,
                                                stride=2,
                                                padding=self.padValue,
-                                               dilation=dilation))
+                                               dilation=dilation)
+        if weightNorm:
+            self.convOne = norm(self.convOne)
         self.activationF = activationF
 
     def forward(self, input):
@@ -111,9 +116,9 @@ class Hc(Cv):
 
     '''
     def __init__(self, inChannel, outChannel, kernelSize,
-                padding, dilation):
+                padding, dilation, weightNorm=False):
         super(Hc, self).__init__(inChannel, outChannel*2, kernelSize,
-                            padding, dilation, None)
+                            padding, dilation, None, weightNorm)
     
     def forward(self, input):
         L = super(Hc, self).forward(input)
