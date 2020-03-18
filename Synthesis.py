@@ -74,6 +74,43 @@ def Synthesize(testLoader, idx2char, DEVICE, t2mPATH, ssrnPATH, wavPATH, imgPATH
                 genMel_t = genMel[:, :, t]  # (B, n_mels)
                 predMel[:, t, :] = genMel_t
 
+            pos = np.zeros((texts.shape[0]),dtype=int)
+            mels = torch.FloatTensor(np.zeros((len(texts), param.n_mels, 1))).to(device) # (N, n_mel, 1)
+            epds = torch.zeros(len(texts)).to(DEVICE) - torch.ones(len(texts)).to(DEVICE)
+            K, V = t2m.TextEnc(batchTxt) # K, V : (B, d, N)
+            v__ = None
+            k__ = None
+            while(1):
+                Q = t2m.AudioEnc(mels[:, :, -1]) # Q : (B, d, input_buffer)
+                for v_, k_, p_ in zip(K, V, pos):
+                    p_ = np.clip(p_, 1, k.shape[2]-4)
+                    if v__ is None:
+                        v__ = torch.unsqueeze(v_[:, p_-1 : p_+3], 0)
+                        k__ = torch.unsqueeze(k_[:, p_-1 : p_+3], 0)
+                    else:
+                        v__ = torch.cat([v__, torch.unsqueeze(v__[:, p_-1 : p_+3], 0)], 0)
+                        k__ = torch.cat([k__, torch.unsqueeze(k__[:, p_-1 : p_+3], 0)], 0)
+
+                    r_, a, _ = t2m.AttentionNet(k_, v_, Q) 
+                    # r_ : (B, 2*d, input_buffer)
+                    # a_ : (B, 4, input_buffer)
+                    mel_logits = t2m.AudioDec(r_)
+                    mels = torch.cat((mels, mel_logits), dim = -1)
+                
+                if mels.shape[2] > 300: # magic number
+                    for i, idx in enumerate(epds):
+                        if epds[i] == -1:
+                            epds[i] = 300
+                    break
+
+                if -1 not in epds:
+                    if cnt == 0:
+                        break
+                    elif cnt > 0:
+                        cnt = -6
+
+                Q[:, :, -1]
+
             # SSRN
             predMag = ssrn(predMel) # Out : (B, T, n_mags)
             predMag = predMag.transpose(1, 2) # (B, n_mags, T*r)
