@@ -262,7 +262,7 @@ if __name__ == "__main__":
         raise ValueError("Please Use proper argv, 0: t2m, 1:SSRN, your input : {}".format(trNet))
     print('Train and Validation Data Loaded successfully.')
     while 1:
-        modelDir = os.path.abspath('./model_{}'.format(modelIdx))
+        modelDir = os.path.abspath('../DCTTS.results/model_{}'.format(modelIdx))
         networkPath = os.path.abspath(os.path.join(modelDir, trNet))
         if retrain:
             break
