@@ -62,7 +62,7 @@ class TextEnc(nn.Module):
                                       padding = "SAME",
                                       dilation = 1))
             
-            self.seq.append(nn.Dropout(param.dr))
+            # self.seq.append(nn.Dropout(param.dr))
 
     def forward(self, input):
         x = self.EmbLayer(input)

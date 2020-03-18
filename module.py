@@ -118,7 +118,7 @@ class Hc(Cv):
     def __init__(self, inChannel, outChannel, kernelSize,
                 padding, dilation, weightNorm=False):
         super(Hc, self).__init__(inChannel, outChannel*2, kernelSize,
-                            padding, dilation, None, weightNorm)
+                            padding, dilation, None, False)
     
     def forward(self, input):
         L = super(Hc, self).forward(input)
