@@ -84,19 +84,19 @@ def collate_fn(data):
     mel_pads = torch.zeros(len(melLen), max(melLen), mels[0].shape[-1])
     mag_pads = torch.zeros(len(magLen), max(magLen), mags[0].shape[-1])
     
-
     for idx in range(len(textLen)):
         text_pads[idx, :textLen[idx]] = texts[idx]
         mel_pads[idx, :melLen[idx]] = mels[idx]
         mag_pads[idx, :magLen[idx]] = mags[idx]
-        
+
+    textLen_tensor = torch.LongTensor(textLen)
     if len(data[0]) == 3:
-        return text_pads, mel_pads, mag_pads
+        return text_pads, mel_pads, mag_pads, textLen_tensor
     else:
         gMat_pads = torch.zeros(len(textLen), max(textLen), max(melLen))
         for idx in range(len(textLen)):
             gMat_pads[idx] = gMat[idx][:max(textLen), :max(melLen)]
-        return text_pads, mel_pads, mag_pads, gMat_pads
+        return text_pads, mel_pads, mag_pads, gMat_pads, textLen_tensor
 
 def att2img(A):
     '''

@@ -62,8 +62,8 @@ class Cv(nn.Module):
         if self.training:
             raise RuntimeError('incremental_forward only supports eval mode')
 
-        kw = self.kernelSize
-        dilation = self.dilation
+        kw = self.convOne.kernel_size[0]
+        dilation = self.convOne.dilation[0]
 
         bsz = input.size(0)  # input: bsz x dim x len
         if kw > 1:
@@ -82,9 +82,9 @@ class Cv(nn.Module):
         if str(input.device) == "cpu" and str(self.convOne.weight.device) == "cpu":
             if self.convOne.weight.requires_grad is True:
                 self.convOne.weight.requires_grad = False
-            output = torch.tensor(np.einsum("ijk,ljk->il", input, self.convOne.weight))
+            output = torch.tensor(np.einsum("ijk,ljp->il", input, self.convOne.weight))
         else:
-            output = torch.einsum('ijk,ljk->il', input, self.convOne.weight) # k can be different 
+            output = torch.einsum('ijk,ljp->il', input, self.convOne.weight) # k can be different 
 
         output = output + self.convOne.bias
 
@@ -95,10 +95,9 @@ class Cv(nn.Module):
     def clear_buffer(self):
         self.input_buffer = None
 
-    def forward(self, input):
-        if self.training:
+    def forward(self, input, is_incremental = False):
+        if self.training or not is_incremental:
             cvOut = self.convOne(input)
-            
             # In Causal mode, drop the right side of the outputs
             if self.pad == "causal" and self.padValue > 0:
                 cvOut = cvOut[:, :, :-self.padValue]
@@ -177,8 +176,8 @@ class Hc(Cv):
         super(Hc, self).__init__(inChannel, outChannel*2, kernelSize,
                             padding, dilation, None, False)
     
-    def forward(self, input):
-        L = super(Hc, self).forward(input)
+    def forward(self, input, is_incremental=False):
+        L = super(Hc, self).forward(input, is_incremental)
         H1, H2 = torch.chunk(L, 2, 1) # Divide L along axis 1 to get 2 matrices.
         self.Output = torch.sigmoid(H1) * H2 + (1-torch.sigmoid(H1)) * input
 
