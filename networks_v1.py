@@ -195,7 +195,7 @@ class AudioDec(nn.Module):
     def forward(self, input, is_incremental=False):
         x = input
         for f in self.seq:
-            if isinstance(f, module.Cv):
+            if isinstance(f, module.Cv) or isinstance(f, module.Hc):
                 x = f(x, is_incremental)
             else:
                 x = f(x)

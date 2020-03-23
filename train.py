@@ -17,8 +17,9 @@ import os
 from tqdm import tqdm
 from params import param
 import shutil
+os.chdir('/Users/isrc/Documents/Python Scripts/tj_temp/DCTTS-torch-incremtal')
 
-os.chdir('/Users/happyjun/Documents/Python Scripts/Speech/DCTTS-torch')
+# os.chdir('/Users/happyjun/Documents/Python Scripts/Speech/DCTTS-torch')
 class graph:
     def __init__(self, trNet):
         self.trNet = trNet
@@ -146,7 +147,7 @@ def validate(graph, trNet, networkPath, valLoader, optimizer,
                 predFirst = torch.zeros(len(batchText), 1, param.n_mels).to(DEVICE)
                 batchText, batchMel = batchText.to(DEVICE), batchMel.to(DEVICE)
                 inputMel = torch.cat((predFirst, batchMel[:, :-1, :]), 1)
-                predMel, Att, _ = graph(batchText, inputMel, True) # prediction results, attention matrix
+                predMel, Att, _ = graph(batchText, inputMel, False) # prediction results, attention matrix
                 
                 predMel = predMel.transpose(1,2)
                 batchLoss = lossL1(predMel, batchMel)

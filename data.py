@@ -103,7 +103,8 @@ def att2img(A):
     input: 
         A : Attention Matrix for one sentence. (1, N, T/r)
     '''
-    A = A.cpu().numpy()
+    if isinstance(A, torch.Tensor):
+        A = A.cpu().numpy()
     A = A[np.newaxis, :]
     T = A.shape[-1]
     for idx in range(T):

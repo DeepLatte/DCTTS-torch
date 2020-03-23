@@ -114,7 +114,7 @@ class Cv(nn.Module):
         else:
             cvOut = self.incremental_forward(input)
             # In Causal mode, drop the right side of the outputs
-            if self.pad == "causal" and self.padValue > 0:
+            if self.pad == "causal" and self.padValue > 0 and not is_incremental:
                 cvOut = cvOut[:, :, :-self.padValue]
             # activation Function
             if self.activationF in param.actFDic.keys():

@@ -76,31 +76,34 @@ def Synthesize(testLoader, idx2char, DEVICE, t2mPATH, ssrnPATH, wavPATH, imgPATH
 
             text_lengths = torch.LongTensor(textLen).to(DEVICE)
             pos = np.zeros((batchTxt.shape[0]),dtype=int)
-            predMel = torch.FloatTensor(np.zeros((len(batchTxt), param.n_mels, 1))).to(DEVICE) # (N, n_mel, 1)
+            predMel = torch.FloatTensor(np.zeros((len(batchTxt), 1, param.n_mels))).to(DEVICE) # (N, 1, n_mel)
             epds = torch.zeros(len(batchTxt)).to(DEVICE) - torch.ones(len(batchTxt)).to(DEVICE)
             
             K, V = t2m.TextEnc(batchTxt) # K, V : (B, d, N)
-            attention = np.zeros((batchTxt.shape[0], text.shape[1], 1))
-            v__ = None
-            k__ = None
+            attention = np.zeros((batchTxt.shape[0], batchTxt.shape[1], 1))
+
+            cnt = 0
+            p_idx = 0
             while(1):
-                Q = t2m.AudioEnc(predMel[:, :, -1], True) # Q : (B, d, input_buffer)
+                v__ = None
+                k__ = None
+                Q = t2m.AudioEnc(torch.unsqueeze(predMel[:, -1, :], 1), True) # Q : (B, d, input_buffer)
                 for v_, k_, p_ in zip(K, V, pos): # batch loop
                     p_ = np.clip(p_, 1, K.shape[2]-4)
                     if v__ is None:
                         v__ = torch.unsqueeze(v_[:, p_-1 : p_+3], 0)
                         k__ = torch.unsqueeze(k_[:, p_-1 : p_+3], 0)
                     else:
-                        v__ = torch.cat([v__, torch.unsqueeze(v__[:, p_-1 : p_+3], 0)], 0)
-                        k__ = torch.cat([k__, torch.unsqueeze(k__[:, p_-1 : p_+3], 0)], 0)
+                        v__ = torch.cat([v__, torch.unsqueeze(v_[:, p_-1 : p_+3], 0)], 0)
+                        k__ = torch.cat([k__, torch.unsqueeze(k_[:, p_-1 : p_+3], 0)], 0)
 
-                    R_, A, _ = t2m.AttentionNet(k_, v_, Q) 
-                    # r_ : (B, 2*d, input_buffer)
-                    # a_ : (B, 4, input_buffer)
-                    mel_logits = t2m.AudioDec(R_, True)
-                    predMel = torch.cat((predMel, mel_logits), dim = -1)
+                R_, A, _ = t2m.AttentionNet(k__, v__, Q) 
+                # r_ : (B, 2*d, input_buffer)
+                # a_ : (B, 4, input_buffer)
+                mel_logits = t2m.AudioDec(R_, True)
+                predMel = torch.cat((predMel, mel_logits.transpose(1,2)), dim = 1)
                 
-                if predMel.shape[2] > 300: # magic number
+                if predMel.shape[1] > 300: # magic number
                     for i, idx in enumerate(epds):
                         if epds[i] == -1:
                             epds[i] = 300
@@ -148,7 +151,7 @@ def Synthesize(testLoader, idx2char, DEVICE, t2mPATH, ssrnPATH, wavPATH, imgPATH
             
             for idx, (text, mag) in enumerate(zip(batchTxt, predMag)):
                 # alignment
-                plotAtt(att2img(A[idx]), text, globalStep, imgPATH)
+                plotAtt(att2img(attention[idx]), text, globalStep, imgPATH)
                 plotMel(predMel[idx], globalStep, imgPATH)
                 # vocoder
                 wav = vocoder.spectrogram2wav(mag)
@@ -160,8 +163,8 @@ if __name__ == "__main__":
     # input text sqeuence from user or use sample sequence.
     # text processing
 
-    modelNumb = int(sys.argv[1])
-    # modelNumb = 1
+    # modelNumb = int(sys.argv[1])
+    modelNumb = 0
     trNet = 'SSRN'
 
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
