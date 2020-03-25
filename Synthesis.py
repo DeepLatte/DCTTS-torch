@@ -83,12 +83,12 @@ def Synthesize(testLoader, idx2char, DEVICE, t2mPATH, ssrnPATH, wavPATH, imgPATH
             attention = np.zeros((batchTxt.shape[0], batchTxt.shape[1], 1))
 
             cnt = 0
-            p_idx = 0
+            p_idx = None
             while(1):
                 v__ = None
                 k__ = None
                 Q = t2m.AudioEnc(torch.unsqueeze(predMel[:, -1, :], 1), True) # Q : (B, d, input_buffer)
-                for v_, k_, p_ in zip(K, V, pos): # batch loop
+                for v_, k_, p_ in zip(V, K, pos): # batch loop
                     p_ = np.clip(p_, 1, K.shape[2]-4)
                     if v__ is None:
                         v__ = torch.unsqueeze(v_[:, p_-1 : p_+3], 0)
