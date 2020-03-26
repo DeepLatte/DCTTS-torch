@@ -126,13 +126,22 @@ class AudioEnc(nn.Module):
                                       dilation = 3))
 
 
-    def forward(self, input):
+    def forward(self, input, is_incremental):
         x = input.transpose(1,2) # (B, n_mels, T)
         for f in self.seq:
-            x = f(x)
-
+            if isinstance(f, module.Cv) or isinstance(f, module.Hc):
+                x = f(x, is_incremental)
+            else:
+                x = f(x)
         return x
-            
+    
+    def clear_buffer(self):
+        for module in self.seq._modules.values():
+            try:
+                module.clear_buffer()
+            except:
+                pass
+
 class AudioDec(nn.Module):
     def __init__(self, fbinSize, dSize):
         super(AudioDec, self).__init__()
@@ -183,13 +192,22 @@ class AudioDec(nn.Module):
                                   activationF = "sigmoid")
         self.seq.append(self.ConvLast)
 
-    def forward(self, input):
+    def forward(self, input, is_incremental=False):
         x = input
         for f in self.seq:
-            x = f(x)
+            if isinstance(f, module.Cv) or isinstance(f, module.Hc):
+                x = f(x, is_incremental)
+            else:
+                x = f(x)
 
         return x
         
+    def clear_buffer(self):
+        for module in self.seq._modules.values():
+            try:
+                module.clear_buffer()
+            except:
+                pass
 
 class SSRN(nn.Module):
     def __init__(self, upsamfbinSize, fbinSize, c,  dSize):
@@ -277,10 +295,13 @@ class SSRN(nn.Module):
                                 activationF = "sigmoid")
         self.seq.append(self.ConvLast)
 
-    def forward(self, input):
+    def forward(self, input, is_incremental=False):
         x = input.transpose(1,2) # (B, n_mels, T/r)
         for f in self.seq:
-            x = f(x)
+            if isinstance(f, module.Cv):
+                x = f(x, is_incremental)
+            else:
+                x = f(x)
 
         return x # (B, n_mag, T)
 
@@ -315,12 +336,12 @@ class t2mGraph(nn.Module):
         self.AudioDec = AudioDec(param.n_mels, param.d)
         self.AttentionNet = AttentionNet()
 
-    def forward(self, textInput, melInput):
+    def forward(self, textInput, melInput, is_incremental=False):
         K, V = self.TextEnc(textInput) # K, V: (B, d, N)
-        Q = self.AudioEnc(melInput) # Q : (B, d, T/r)
+        Q = self.AudioEnc(melInput, is_incremental) # Q : (B, d, T/r)
         R_, Alignment, maxAtt = self.AttentionNet(K, V, Q) # R_ : (B, 2*d, T/r)
 
-        coarseMel = self.AudioDec(R_) # coarseMel : (B, n_mels, T/r)
+        coarseMel = self.AudioDec(R_, is_incremental) # coarseMel : (B, n_mels, T/r)
 
         return coarseMel, Alignment, maxAtt
 
@@ -329,7 +350,7 @@ class SSRNGraph(nn.Module):
         super(SSRNGraph, self).__init__()
         self.SSRN = SSRN(param.n_mags, param.n_mels, param.c, param.d)
 
-    def forward(self, input):
-        SSRNOut = self.SSRN(input)
+    def forward(self, input, is_incremental=False):
+        SSRNOut = self.SSRN(input, is_incremental)
 
         return SSRNOut

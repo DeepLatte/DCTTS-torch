@@ -24,7 +24,7 @@ class graph(nn.Module):
             self.trainGraph = networks.SSRNGraph().to(DEVICE)
 
 def dirLoad(modelNumb):
-    modelPath = os.path.abspath('./model_{}'.format(modelNumb))
+    modelPath = os.path.abspath('../DCTTS.results/model_{}'.format(modelNumb))
     logt2m = list(np.genfromtxt(os.path.join(modelPath, 't2m', 'log.csv'), delimiter=','))
     globalStep = int(logt2m[-1][0])
     t2mPATH = os.path.join(modelPath, 't2m', 'best_{}'.format(globalStep), 'bestModel_{}.pth'.format(globalStep))
@@ -64,15 +64,86 @@ def Synthesize(testLoader, idx2char, DEVICE, t2mPATH, ssrnPATH, wavPATH, imgPATH
         # wholeMag = torch.zeros(len(testLoader.dataset), param.max_T*param.r, param.n_mags).to(DEVICE)
         for idx, batchData in enumerate(testLoader):
             # predMel with zero values
-            batchTxt, batchMel, _ = batchData
+            batchTxt, batchMel, _, textLen = batchData
             batchTxt = batchTxt.to(DEVICE)
-            # batchMel = batchMel.to(DEVICE)
-            predMel = torch.zeros(param.B,  param.max_T, param.n_mels).to(DEVICE) # (B, T/r, n_mels)
-            # At every time step, predict mel spectrogram
-            for t in range(param.max_T-1):
-                genMel, A, _  = t2m(batchTxt, predMel) #genMel : (B, n_mels, T/r)
-                genMel_t = genMel[:, :, t]  # (B, n_mels)
-                predMel[:, t, :] = genMel_t
+            # # batchMel = batchMel.to(DEVICE)
+            # predMel = torch.zeros(param.B,  param.max_T, param.n_mels).to(DEVICE) # (B, T/r, n_mels)
+            # # At every time step, predict mel spectrogram
+            # for t in range(param.max_T-1):
+            #     genMel, A, _  = t2m(batchTxt, predMel) #genMel : (B, n_mels, T/r)
+            #     genMel_t = genMel[:, :, t+1]  # (B, n_mels)
+            #     predMel[:, t+1, :] = genMel_t
+
+            text_lengths = torch.LongTensor(textLen).to(DEVICE)
+            pos = np.zeros((batchTxt.shape[0]),dtype=int)
+            predMel = torch.FloatTensor(np.zeros((len(batchTxt), 1, param.n_mels))).to(DEVICE) # (N, 1, n_mel)
+            epds = torch.zeros(len(batchTxt)).to(DEVICE) - torch.ones(len(batchTxt)).to(DEVICE)
+            
+            K, V = t2m.TextEnc(batchTxt) # K, V : (B, d, N)
+            attention = np.zeros((batchTxt.shape[0], batchTxt.shape[1], 1))
+
+            cnt = 0
+            p_idx = None
+            while(1):
+                v__ = None
+                k__ = None
+                Q = t2m.AudioEnc(torch.unsqueeze(predMel[:, -1, :], 1), True) # Q : (B, d, input_buffer)
+                for v_, k_, p_ in zip(V, K, pos): # batch loop
+                    p_ = np.clip(p_, 1, K.shape[2]-4)
+                    if v__ is None:
+                        v__ = torch.unsqueeze(v_[:, p_-1 : p_+3], 0)
+                        k__ = torch.unsqueeze(k_[:, p_-1 : p_+3], 0)
+                    else:
+                        v__ = torch.cat([v__, torch.unsqueeze(v_[:, p_-1 : p_+3], 0)], 0)
+                        k__ = torch.cat([k__, torch.unsqueeze(k_[:, p_-1 : p_+3], 0)], 0)
+
+                R_, A, _ = t2m.AttentionNet(k__, v__, Q) 
+                # r_ : (B, 2*d, input_buffer)
+                # a_ : (B, 4, input_buffer)
+                mel_logits = t2m.AudioDec(R_, True)
+                predMel = torch.cat((predMel, mel_logits.transpose(1,2)), dim = 1)
+                
+                if predMel.shape[1] > 300: # magic number
+                    for i, idx in enumerate(epds):
+                        if epds[i] == -1:
+                            epds[i] = 300
+                    break
+
+                if -1 not in epds:
+                    if cnt == 0:
+                        break
+                    elif cnt > 0:
+                        cnt = -6
+
+                cnt += 1
+
+                a__ = None
+                for a_, p_ in zip(A, pos):
+                    p_ = np.clip(p_, 1, K.shape[2]-4)
+                    a_ = np.expand_dims(np.pad(a_.cpu().numpy(), ((p_-1, K.shape[2] - 3 - p_),(0,0)), mode='constant'), 0 )
+                    if a__ is None:
+                        a__ = a_
+                    else:
+                        a__ = np.concatenate([a__, a_], 0) # add attention matrix to batch
+                
+                attention = np.concatenate([attention, a__], 2) # concatenate along time axis
+            
+                p = torch.argmax(A, 1).squeeze(1)
+                pos = np.add(pos, p.cpu().numpy())
+
+                if p_idx is None:
+                    p_idx = p
+                else:
+                    p_idx = p_idx + p
+
+                _bound = torch.ge(p_idx, text_lengths-1) # torch.ge(input, other) : return bool input >= other
+                for i, idx in enumerate(p_idx):
+                    if _bound[i]:
+                        if epds[i] == -1:
+                            epds[i] = cnt + 6 # for spare
+
+            t2m.AudioEnc.clear_buffer()
+            t2m.AudioDec.clear_buffer()
 
             # SSRN
             predMag = ssrn(predMel) # Out : (B, T, n_mags)
@@ -80,7 +151,7 @@ def Synthesize(testLoader, idx2char, DEVICE, t2mPATH, ssrnPATH, wavPATH, imgPATH
             
             for idx, (text, mag) in enumerate(zip(batchTxt, predMag)):
                 # alignment
-                plotAtt(att2img(A[idx]), text, globalStep, imgPATH)
+                plotAtt(att2img(attention[idx]), text, globalStep, imgPATH)
                 plotMel(predMel[idx], globalStep, imgPATH)
                 # vocoder
                 wav = vocoder.spectrogram2wav(mag)
@@ -93,7 +164,7 @@ if __name__ == "__main__":
     # text processing
 
     modelNumb = int(sys.argv[1])
-    # modelNumb = 1
+    # modelNumb = 0
     trNet = 'SSRN'
 
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"

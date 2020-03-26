@@ -18,7 +18,6 @@ from tqdm import tqdm
 from params import param
 import shutil
 
-
 class graph:
     def __init__(self, trNet):
         self.trNet = trNet
@@ -70,7 +69,7 @@ def train(graph, trNet, trainLoader, valLoader, networkPath, writer):
             optimizer.zero_grad()
             # calculate loss value
             if trNet is "t2m":
-                batchText, batchMel, _, batchgMat = batchData
+                batchText, batchMel, _, batchgMat, _ = batchData
                 predFirst = torch.zeros(len(batchText), 1, param.n_mels).to(DEVICE) # for shift
                 batchText, batchMel = batchText.to(DEVICE), batchMel.to(DEVICE) # (B, N) (B, T, n_mels)
                 inputMel = torch.cat((predFirst, batchMel[:, :-1, :]), 1)
@@ -84,7 +83,7 @@ def train(graph, trNet, trainLoader, valLoader, networkPath, writer):
                 lossDic['AttlossGstep'] += attLoss.item()
 
             elif trNet is "SSRN":
-                _, batchMel, batchMag = batchData
+                _, batchMel, batchMag, _ = batchData
                 batchMel, batchMag = batchMel.to(DEVICE), batchMag.to(DEVICE)
                 predMag = graph(batchMel)
                 predMag = predMag.transpose(1, 2)
@@ -142,18 +141,18 @@ def validate(graph, trNet, networkPath, valLoader, optimizer,
         valLoss = 0.
         for _, batchData in enumerate(valLoader):
             if trNet is "t2m":
-                batchText, batchMel, _, _ = batchData
+                batchText, batchMel, _, _, _ = batchData
                 predFirst = torch.zeros(len(batchText), 1, param.n_mels).to(DEVICE)
                 batchText, batchMel = batchText.to(DEVICE), batchMel.to(DEVICE)
                 inputMel = torch.cat((predFirst, batchMel[:, :-1, :]), 1)
-                predMel, Att, _ = graph(batchText, inputMel) # prediction results, attention matrix
+                predMel, Att, _ = graph(batchText, inputMel, False) # prediction results, attention matrix
                 
                 predMel = predMel.transpose(1,2)
                 batchLoss = lossL1(predMel, batchMel)
                 valLoss += batchLoss.item()
 
             elif trNet is "SSRN":
-                _, batchMel, batchMag = batchData
+                _, batchMel, batchMag, _ = batchData
                 batchMel, batchMag = batchMel.to(DEVICE), batchMag.to(DEVICE)
                 predMag = graph(batchMel)
                 predMag = predMag.transpose(1, 2)
@@ -229,8 +228,11 @@ def saveModel10k(globalStep, graph, optimizer, loss, networkPath, lossList):
 # normalization
 
 if __name__ == "__main__":
-    # trNet = 0
-    trNet = int(sys.argv[1])
+    
+    try:
+        trNet = int(sys.argv[1])
+    except:
+        trNet = 0
     try:
         retrain = int(sys.argv[3])
     except:
@@ -261,6 +263,8 @@ if __name__ == "__main__":
     else:
         raise ValueError("Please Use proper argv, 0: t2m, 1:SSRN, your input : {}".format(trNet))
     print('Train and Validation Data Loaded successfully.')
+    if not os.path.exists(os.path.abspath('../DCTTS.results')):
+        os.mkdir(os.path.abspath('../DCTTS.results'))
     while 1:
         modelDir = os.path.abspath('../DCTTS.results/model_{}'.format(modelIdx))
         networkPath = os.path.abspath(os.path.join(modelDir, trNet))

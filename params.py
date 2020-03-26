@@ -35,6 +35,11 @@ class param():
     actFDic = {"ReLU" : torch.relu, "sigmoid" : torch.sigmoid}
 
     lr = 0.0001 # learning rate
-    dr = 0.1 # dropout
+    dr = 0.05 # dropout
     adam_beta = (0.5, 0.9)
     adam_eps = 1e-6
+
+    #specAug
+    specAugON = False
+    spaugDomain = 0
+    spmaskNumb = 1

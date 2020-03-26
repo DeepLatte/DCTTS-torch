@@ -40,6 +40,8 @@ class Cv(nn.Module):
                   "none" : 0}
         self.pad = padding.lower()
         self.padValue = padDic[self.pad]
+        self.kernelSize = kernelSize
+        self.dilation = dilation
         self.convOne = nn.Conv1d(in_channels=inChannel, 
                                  out_channels=outChannel, 
                                  kernel_size=kernelSize,
@@ -51,23 +53,77 @@ class Cv(nn.Module):
 
         self.activationF = activationF
 
+        self.clear_buffer()
 
-    def forward(self, input):
-        cvOut = self.convOne(input)
-        
-        # In Causal mode, drop the right side of the outputs
-        if self.pad == "causal" and self.padValue > 0:
-            cvOut = cvOut[:, :, :-self.padValue]
+    def incremental_forward(self, input):
+        # do convolutional process incrementally.
+        # input: (B, C, T)
+        # output : (B, C, input_buffer length)
+        if self.training:
+            raise RuntimeError('incremental_forward only supports eval mode')
 
-        # activation Function
-        if self.activationF in param.actFDic.keys():
-            cvOut = param.actFDic[self.activationF](cvOut)
-        elif self.activationF == None:
-            pass
+        kw = self.convOne.kernel_size[0]
+        dilation = self.convOne.dilation[0]
+
+        bsz = input.size(0)  # input: bsz x dim x len
+        if kw > 1:
+            input = input.data
+            if self.input_buffer is None:
+                self.input_buffer = input.new(bsz, input.size(1), kw + (kw - 1) * (dilation - 1)) # if d = 1, third term will be 'kw' -> (bsz, dim, kw)
+                self.input_buffer.zero_()
+            else:
+                # shift buffer
+                self.input_buffer[:, :, :-1] = self.input_buffer[:, :, 1:].clone()
+            # append next input
+            self.input_buffer[:, :, -1] = input[:, :, -1]
+            input = self.input_buffer
+            if dilation > 1:
+                input = input[:, :, 0::dilation].contiguous()
+        if str(input.device) == "cpu" and str(self.convOne.weight.device) == "cpu":
+            if self.convOne.weight.requires_grad is True:
+                self.convOne.weight.requires_grad = False
+            output = torch.tensor(np.einsum("ijk,ljk->il", input, self.convOne.weight))
         else:
-            raise ValueError("You should use appropriate actvation Function argument. \
-                             [None, 'ReLU', 'sigmoid'].")
-            
+            output = torch.einsum('ijk,ljk->il', input, self.convOne.weight)
+
+        output = output + self.convOne.bias
+
+        output = torch.unsqueeze(output, dim=2)
+
+        return output
+
+    def clear_buffer(self):
+        self.input_buffer = None
+
+    def forward(self, input, is_incremental = False):
+        if self.training or not is_incremental:
+            cvOut = self.convOne(input)
+            # In Causal mode, drop the right side of the outputs
+            if self.pad == "causal" and self.padValue > 0:
+                cvOut = cvOut[:, :, :-self.padValue]
+
+            # activation Function
+            if self.activationF in param.actFDic.keys():
+                cvOut = param.actFDic[self.activationF](cvOut)
+            elif self.activationF == None:
+                pass
+            else:
+                raise ValueError("You should use appropriate actvation Function argument. \
+                                [None, 'ReLU', 'sigmoid'].")
+        
+        else:
+            cvOut = self.incremental_forward(input)
+            # In Causal mode, drop the right side of the outputs
+            if self.pad == "causal" and self.padValue > 0 and not is_incremental:
+                cvOut = cvOut[:, :, :-self.padValue]
+            # activation Function
+            if self.activationF in param.actFDic.keys():
+                cvOut = param.actFDic[self.activationF](cvOut)
+            elif self.activationF == None:
+                pass
+            else:
+                raise ValueError("You should use appropriate actvation Function argument. \
+                                [None, 'ReLU', 'sigmoid'].")
         return cvOut
 
 class Dc(nn.Module):
@@ -120,10 +176,13 @@ class Hc(Cv):
         super(Hc, self).__init__(inChannel, outChannel*2, kernelSize,
                             padding, dilation, None, False)
     
-    def forward(self, input):
-        L = super(Hc, self).forward(input)
+    def forward(self, input, is_incremental=False):
+        L = super(Hc, self).forward(input, is_incremental)
         H1, H2 = torch.chunk(L, 2, 1) # Divide L along axis 1 to get 2 matrices.
         self.Output = torch.sigmoid(H1) * H2 + (1-torch.sigmoid(H1)) * input
 
         return self.Output
+
+    def clear_buffer(self):
+        super(Hc, self).clear_buffer()
 
