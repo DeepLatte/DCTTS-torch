@@ -3,7 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data.dataset import Dataset
 import os
-
+import sys
+sys.path.append('../')
+from specAugment import specAug
 
 import numpy as np
 from params import param
@@ -83,10 +85,13 @@ def collate_fn(data):
     text_pads = torch.zeros(len(textLen), max(textLen), dtype=torch.long)
     mel_pads = torch.zeros(len(melLen), max(melLen), mels[0].shape[-1])
     mag_pads = torch.zeros(len(magLen), max(magLen), mags[0].shape[-1])
-    
+
     for idx in range(len(textLen)):
         text_pads[idx, :textLen[idx]] = texts[idx]
-        mel_pads[idx, :melLen[idx]] = mels[idx]
+        if param.specAugON:
+            mel_pads[idx, :melLen[idx]] = specAug.applyAugment(mels[idx], param.spaugDomain, param.spmaskNumb)
+        else:
+            mel_pads[idx, :melLen[idx]] = mels[idx]
         mag_pads[idx, :magLen[idx]] = mags[idx]
 
     textLen_tensor = torch.LongTensor(textLen)

@@ -10,7 +10,6 @@ from tqdm import tqdm
 from params import param
 from torch.utils.data.dataset import Dataset
 from gAtt import guideAttentionNT
-os.chdir('/Users/isrc/Documents/Python Scripts/tj_temp/DCTTS-torch-incremtal')
 
 def load_vocab():
     char2idx = {char: idx for idx, char in enumerate(param.vocab)}

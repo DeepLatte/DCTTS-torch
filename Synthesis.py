@@ -83,7 +83,7 @@ def Synthesize(testLoader, idx2char, DEVICE, t2mPATH, ssrnPATH, wavPATH, imgPATH
             attention = np.zeros((batchTxt.shape[0], batchTxt.shape[1], 1))
 
             cnt = 0
-            p_idx = 0
+            p_idx = None
             while(1):
                 v__ = None
                 k__ = None
@@ -163,8 +163,8 @@ if __name__ == "__main__":
     # input text sqeuence from user or use sample sequence.
     # text processing
 
-    # modelNumb = int(sys.argv[1])
-    modelNumb = 0
+    modelNumb = int(sys.argv[1])
+    # modelNumb = 0
     trNet = 'SSRN'
 
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"

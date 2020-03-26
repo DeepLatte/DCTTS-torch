@@ -84,7 +84,7 @@ class Cv(nn.Module):
                 self.convOne.weight.requires_grad = False
             output = torch.tensor(np.einsum("ijk,ljp->il", input, self.convOne.weight))
         else:
-            output = torch.einsum('ijk,ljp->il', input, self.convOne.weight) # k can be different 
+            output = torch.einsum('ijk,ljp->il', input, self.convOne.weight)
 
         output = output + self.convOne.bias
 
@@ -182,4 +182,7 @@ class Hc(Cv):
         self.Output = torch.sigmoid(H1) * H2 + (1-torch.sigmoid(H1)) * input
 
         return self.Output
+
+    def clear_buffer(self):
+        super(Hc, self).clear_buffer()
 

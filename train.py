@@ -17,7 +17,6 @@ import os
 from tqdm import tqdm
 from params import param
 import shutil
-os.chdir('/Users/isrc/Documents/Python Scripts/tj_temp/DCTTS-torch-incremtal')
 
 # os.chdir('/Users/happyjun/Documents/Python Scripts/Speech/DCTTS-torch')
 class graph:
