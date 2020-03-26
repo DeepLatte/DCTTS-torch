@@ -82,9 +82,9 @@ class Cv(nn.Module):
         if str(input.device) == "cpu" and str(self.convOne.weight.device) == "cpu":
             if self.convOne.weight.requires_grad is True:
                 self.convOne.weight.requires_grad = False
-            output = torch.tensor(np.einsum("ijk,ljp->il", input, self.convOne.weight))
+            output = torch.tensor(np.einsum("ijk,ljk->il", input, self.convOne.weight))
         else:
-            output = torch.einsum('ijk,ljp->il', input, self.convOne.weight)
+            output = torch.einsum('ijk,ljk->il', input, self.convOne.weight)
 
         output = output + self.convOne.bias
 

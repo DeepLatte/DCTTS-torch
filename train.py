@@ -18,7 +18,6 @@ from tqdm import tqdm
 from params import param
 import shutil
 
-# os.chdir('/Users/happyjun/Documents/Python Scripts/Speech/DCTTS-torch')
 class graph:
     def __init__(self, trNet):
         self.trNet = trNet
