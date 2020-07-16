@@ -153,7 +153,7 @@ class Dc(nn.Module):
         DcOut = self.transposedCv(input)
 
         if self.pad == "causal":
-            cvOut = cvOut[:, :, :-self.padValue]
+            DcOut = DcOut[:, :, :-self.padValue]
 
         # activation Function
         if self.activationF in param.actFDic.keys():
